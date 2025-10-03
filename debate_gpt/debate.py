@@ -18,22 +18,25 @@ class ChatThread:
         return [message.__dict__ for message in self.messages]
 
 class Debater:
-    def __init__(self, name: str, position: str, initial_prompt: str):
+    def __init__(self, name: str, position: str, initial_prompt: str, verbose: bool = False):
         self.name = name
         self.position = position
         self.thread = ChatThread()
         self.thread.messages = [ChatMessage(initial_prompt)]
+        self.verbose = verbose
 
         self._log_initialization(initial_prompt[:150] + "...")
 
     def _log_initialization(self, prompt: str):
         """Log debater initialization."""
+        if not self.verbose: return
         print(f"🤖 Initialized {self.name} ({self.position}) with prompt:")
         print(f"'{prompt}'")
         print()
 
     def _log_thread_state(self, title: str):
         """Log current thread state."""
+        if not self.verbose: return
         print(f"\n🔍 {title} - {self.name} ({self.position}) Thread:")
         print("=" * 60)
         for i, msg in enumerate(self.thread.messages, 1):
@@ -42,26 +45,31 @@ class Debater:
 
     def _log_receiving_opponent(self, response: str):
         """Log when receiving opponent response."""
+        if not self.verbose: return
         print(f"\n📨 {self.name} receiving opponent response...")
         print(f"Opponent said: {response[:200]}{'...' if len(response) > 200 else ''}")
 
     def _log_api_request(self, request: dict):
         """Log API request data."""
+        if not self.verbose: return
         print(f"\n🚀 API REQUEST for {self.name}:")
         print(json.dumps(request, indent=2))
 
     def _log_api_response(self, response: dict):
         """Log raw API response."""
+        if not self.verbose: return
         print(f"\n📥 RAW API RESPONSE for {self.name}:")
         print(json.dumps(response, indent=2))
 
     def _log_generated_response(self, content: str):
         """Log generated response content."""
+        if not self.verbose: return
         print(f"\n💬 GENERATED RESPONSE for {self.name}:")
         print(f"'{content}'")
 
     def _log_error(self, message: str):
         """Log error messages."""
+        if not self.verbose: return
         print(f"\n❌ ERROR: {message}")
 
     def receive_opponent_response(self, opponent_response: str):
@@ -97,9 +105,13 @@ class Debater:
         return ""
 
 class Moderator:
-    def __init__(self, debater1: Debater, debater2: Debater):
+    def __init__(self, debater1: Debater, debater2: Debater, verbose: bool = False):
         self.debater1 = debater1
         self.debater2 = debater2
+        self.verbose = verbose
+        # Pass verbose setting to debaters
+        self.debater1.verbose = verbose
+        self.debater2.verbose = verbose
 
     def _log_debate_start(self):
         """Log debate initialization."""
@@ -110,26 +122,30 @@ class Moderator:
 
     def _log_initial_states(self):
         """Log initial thread states header."""
+        if not self.verbose: return
         print("📋 INITIAL THREAD STATES:")
 
     def _log_round_section(self, round_num: int, title: str):
         """Log round section header."""
+        if not self.verbose: return
         print(f"\n{'='*80}")
         print(f"🎤 ROUND {round_num}: {title}")
         print("="*80)
 
     def _log_debater_turn(self, debater, action: str):
         """Log debater turn information."""
+        if not self.verbose: return
         print(f"\n👤 {debater.name} ({debater.position}) {action}...")
 
     def _log_final_output(self, debater, output_type: str, content: str):
         """Log final output for a debater."""
-        print(f"\n🎯 FINAL OUTPUT - {debater.name}'s {output_type}:")
-        print(f"'{content}'")
+        print(f"{debater.name} ({debater.position}):")
+        print(content)
         print()
 
     def _log_debate_end(self):
         """Log debate completion."""
+        if not self.verbose: return
         print("\n" + "="*80)
         print("🏁 DEBATE ROUND COMPLETED")
         print("="*80)
@@ -168,17 +184,22 @@ class Moderator:
         self.debater1._log_thread_state("FINAL")
         self.debater2._log_thread_state("FINAL")
 
+# Set to True to enable verbose diagnostic logging
+VERBOSE_MODE = False
+
 chevy_debater = Debater(
     name="Debater One",
     position="Chevy",
-    initial_prompt="You are in a debate. You will defend your position ardently. Your responses will be at most three sentences. The debate will end when you decide the other person's arguments have persuaded you to change your position. The debate may not end with such an outcome and may require a debate moderator to declare the debate over. The topic is Chevy vs Ford. Your position is Chevy is better than Ford. Start the debate and make your claim on your position."
+    initial_prompt="You are in a debate. You will defend your position ardently. Your responses will be at most one sentence. The debate will end when you decide the other person's arguments have persuaded you to change your position. The debate may not end with such an outcome and may require a debate moderator to declare the debate over. The topic is Chevy vs Ford. Your position is Chevy is better than Ford. Start the debate and make your claim on your position.",
+    verbose=VERBOSE_MODE
 )
 
 ford_debater = Debater(
     name="Debater Two",
     position="Ford",
-    initial_prompt="You are in a debate. You will defend your position ardently. Your responses will be at most three sentences. The debate will end when you decide the other person's arguments have persuaded you to change your position. The debate may not end with such an outcome and may require a debate moderator to declare the debate over. The topic is Chevy vs Ford. Your position is Ford is better than Chevy."
+    initial_prompt="You are in a debate. You will defend your position ardently. Your responses will be at most one sentence. The debate will end when you decide the other person's arguments have persuaded you to change your position. The debate may not end with such an outcome and may require a debate moderator to declare the debate over. The topic is Chevy vs Ford. Your position is Ford is better than Chevy.",
+    verbose=VERBOSE_MODE
 )
 
-debate_moderator = Moderator(chevy_debater, ford_debater)
+debate_moderator = Moderator(chevy_debater, ford_debater, verbose=VERBOSE_MODE)
 debate_moderator.conduct_single_round()
