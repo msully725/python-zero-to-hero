@@ -7,7 +7,7 @@ class ChatMessage:
     role: str = "user"
 
     def to_dict(self):
-        return { "role": self.role, "content": self.contet }
+        return { "role": self.role, "content": self.content }
 
 @dataclass
 class ChatThread:
@@ -38,5 +38,5 @@ print(response)
 # 6. Repeat 4,5
 #
 # 🤔 Thought: We are not appending a Debater's response to their own thread, 
-# which means they lose attention of what they have laredy said. 
+# which means they lose attention of what they have already said. 
 # Will need to think about how to remedy that.
