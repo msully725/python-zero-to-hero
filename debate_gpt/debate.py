@@ -39,8 +39,8 @@ class Debater:
         if not self.verbose: return
         print(f"\n🔍 {title} - {self.name} ({self.position}) Thread:")
         print("=" * 60)
-        for i, msg in enumerate(self.thread.messages, 1):
-            print(f"[{i}] {msg.role.upper()}: {msg.content[:100]}{'...' if len(msg.content) > 100 else ''}")
+        for i, message in enumerate(self.thread.messages, 1):
+            print(f"[{i}] {message.role.upper()}: {message.content[:100]}{'...' if len(message.content) > 100 else ''}")
         print("=" * 60)
 
     def _log_receiving_opponent(self, response: str):
@@ -105,10 +105,11 @@ class Debater:
         return ""
 
 class Moderator:
-    def __init__(self, debater1: Debater, debater2: Debater, verbose: bool = False):
+    def __init__(self, debater1: Debater, debater2: Debater, verbose: bool = False, max_rounds: int = 5):
         self.debater1 = debater1
         self.debater2 = debater2
         self.verbose = verbose
+        self.max_rounds = max_rounds
         # Pass verbose setting to debaters
         self.debater1.verbose = verbose
         self.debater2.verbose = verbose
@@ -116,7 +117,7 @@ class Moderator:
     def _log_debate_start(self):
         """Log debate initialization."""
         print("🎭 === DEBATE: Chevy vs Ford ===")
-        print("📋 Single Round Format: D1 Opening → D2 Response")
+        print(f"📋 Multi-Round Format: Up to {self.max_rounds} rounds, alternating responses")
         print("=" * 80)
         print()
 
@@ -125,11 +126,11 @@ class Moderator:
         if not self.verbose: return
         print("📋 INITIAL THREAD STATES:")
 
-    def _log_round_section(self, round_num: int, title: str):
+    def _log_round_section(self, round_number: int, title: str):
         """Log round section header."""
         if not self.verbose: return
         print(f"\n{'='*80}")
-        print(f"🎤 ROUND {round_num}: {title}")
+        print(f"🎤 ROUND {round_number}: {title}")
         print("="*80)
 
     def _log_debater_turn(self, debater, action: str):
@@ -143,63 +144,62 @@ class Moderator:
         print(content)
         print()
 
+
     def _log_debate_end(self):
         """Log debate completion."""
         if not self.verbose: return
         print("\n" + "="*80)
-        print("🏁 DEBATE ROUND COMPLETED")
+        print("🏁 DEBATE COMPLETED")
         print("="*80)
         print("📋 FINAL THREAD STATES:")
 
-    def conduct_single_round(self):
-        """Conduct a single round of debate: D1 speaks, D2 responds."""
+    def conduct_debate(self):
+        """Conduct a multi-round debate between the two debaters."""
         self._log_debate_start()
         self._log_initial_states()
 
-        # Initial thread states - use debater's own logging
         self.debater1._log_thread_state("INITIAL")
         self.debater2._log_thread_state("INITIAL")
 
-        self._log_round_section(1, "DEBATER 1'S OPENING STATEMENT")
-
-        # Debater 1's opening statement
-        self._log_debater_turn(self.debater1, "begins the debate")
         d1_response = self.debater1.generate_response()
-
         self._log_final_output(self.debater1, "Opening Statement", d1_response)
 
-        self._log_round_section(1, "DEBATER 2'S RESPONSE")
-
-        # Give D1's response to D2 and get D2's response
-        self._log_debater_turn(self.debater2, "receives opponent statement and responds")
         self.debater2.receive_opponent_response(d1_response)
 
         d2_response = self.debater2.generate_response()
-
         self._log_final_output(self.debater2, "Response", d2_response)
 
-        self._log_debate_end()
+        for round_number in range(2, self.max_rounds + 1):
+            self.debater1.receive_opponent_response(d2_response)
 
-        # Final thread states - use debater's own logging
+            d1_response = self.debater1.generate_response()
+            self._log_final_output(self.debater1, f"Response (Round {round_number})", d1_response)
+
+            self.debater2.receive_opponent_response(d1_response)
+
+            d2_response = self.debater2.generate_response()
+            self._log_final_output(self.debater2, f"Response (Round {round_number})", d2_response)
+
+        print(f"🏁 Debate completed {self.max_rounds} rounds.")
+        self._log_debate_end()
         self.debater1._log_thread_state("FINAL")
         self.debater2._log_thread_state("FINAL")
 
-# Set to True to enable verbose diagnostic logging
-VERBOSE_MODE = False
+enable_diagnostic_logging = False
 
 chevy_debater = Debater(
     name="Debater One",
     position="Chevy",
     initial_prompt="You are in a debate. You will defend your position ardently. Your responses will be at most one sentence. The debate will end when you decide the other person's arguments have persuaded you to change your position. The debate may not end with such an outcome and may require a debate moderator to declare the debate over. The topic is Chevy vs Ford. Your position is Chevy is better than Ford. Start the debate and make your claim on your position.",
-    verbose=VERBOSE_MODE
+    verbose=enable_diagnostic_logging
 )
 
 ford_debater = Debater(
     name="Debater Two",
     position="Ford",
     initial_prompt="You are in a debate. You will defend your position ardently. Your responses will be at most one sentence. The debate will end when you decide the other person's arguments have persuaded you to change your position. The debate may not end with such an outcome and may require a debate moderator to declare the debate over. The topic is Chevy vs Ford. Your position is Ford is better than Chevy.",
-    verbose=VERBOSE_MODE
+    verbose=enable_diagnostic_logging
 )
 
-debate_moderator = Moderator(chevy_debater, ford_debater, verbose=VERBOSE_MODE)
-debate_moderator.conduct_single_round()
+debate_moderator = Moderator(chevy_debater, ford_debater, verbose=enable_diagnostic_logging)
+debate_moderator.conduct_debate()
